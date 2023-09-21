@@ -3,11 +3,21 @@ from dataclasses import dataclass
 from elasticsearch import Elasticsearch
 from typing import List, Any, Dict, Union, Callable, Optional
 from functools import wraps
+from langchain.embeddings import VertexAIEmbeddings
+from langchain.llms import VertexAI
+from langchain import PromptTemplate, LLMChain
+from es_cache import ESCacheClient
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def ensure_connection(func: Callable) -> Callable:
+    """
+    Decorator to ensure that the Elasticsearch connection is established.
+    :param func: Function to be decorated.
+    :return: Decorated function.
+    """
     @wraps(func)
     def wrapper(instance, *args, **kwargs):
         if not instance.es:
@@ -19,6 +29,9 @@ def ensure_connection(func: Callable) -> Callable:
 
 # Cache Client
 class ESCacheClient:
+    """
+    Elasticsearch Cache Client.
+    """
     def __init__(
         self, 
         host: str = 'localhost', 
@@ -27,7 +40,15 @@ class ESCacheClient:
         username: str = 'elastic', 
         password:str = 'pass#123', 
         cert_path: str = './instance_ss.crt'):
-        
+        """
+        Initialize the Elasticsearch Cache Client.
+        :param host: Hostname for the Elasticsearch server.
+        :param port: Port number for the Elasticsearch server.
+        :param vector_dims: Dimensions of the vector embeddings.
+        :param username: Username for the Elasticsearch server.
+        :param password: Password for the Elasticsearch server.
+        :param cert_path: Path to the SSL certificate for the Elasticsearch server.
+        """
         
         self.es_config = ESConnectionConfig(host=host, port=port, username=username, password= password, cert_path=cert_path)
         self.es_connection = ESConnection(config=self.es_config, logger=logger)
@@ -39,18 +60,38 @@ class ESCacheClient:
         self.search = ESSearch(self.es_connection, vector_dims)
 
     def setup_index(self, *args, **kwargs):
+        """
+        Set up the index in Elasticsearch.
+        :param args: Positional arguments.
+        :param kwargs: Keyword arguments.
+        :return: Result of the index setup operation.
+        """
         return self.index_manager.setup_index(*args, **kwargs)
 
     def insert_document(self, *args, **kwargs):
+        """
+        Insert a document into Elasticsearch.
+        :param args: Positional arguments.
+        :param kwargs: Keyword arguments.
+        :return: Result of the document insertion operation.
+        """
         return self.document_manager.insert_document(*args, **kwargs)
 
     def hybrid_search(self, *args, **kwargs):
+        """
+        Perform a hybrid search in Elasticsearch.
+        :param args: Positional arguments.
+        :param kwargs: Keyword arguments.
+        :return: Result of the hybrid search operation.
+        """
         return self.search.hybrid_search(*args, **kwargs)
 
 
 @dataclass(frozen=True)
 class ESConnectionConfig:
-    """Immutable configuration for Elasticsearch connection."""
+    """
+    Immutable configuration for Elasticsearch connection.
+    """
     host: str
     port: int
     username: Optional[str] = None
@@ -58,14 +99,23 @@ class ESConnectionConfig:
     cert_path: str = './instance_ss.crt'
 
 class ESConnection:
-    """Manages Elasticsearch connection."""
+    """
+    Manages Elasticsearch connection.
+    """
     def __init__(self, config: ESConnectionConfig, logger: logging.Logger):
+        """
+        Initialize the Elasticsearch connection.
+        :param config: Configuration for the Elasticsearch connection.
+        :param logger: Logger instance.
+        """
         self.config = config
         self.client = None
         self.logger = logger
 
     def establish_connection(self) -> None:
-        """Establishes connection to Elasticsearch."""
+        """
+        Establishes connection to Elasticsearch.
+        """
         try:
             hosts = [{
                 'host': self.config.host,
@@ -96,7 +146,14 @@ class ESConnection:
 
 # Index Management
 class ESIndexManager:
+    """
+    Manages Elasticsearch indices.
+    """
     def __init__(self, es_connection: ESConnection):
+        """
+        Initialize the Elasticsearch Index Manager.
+        :param es_connection: Elasticsearch connection instance.
+        """
         self.es = es_connection.client
         self.logger = logger
 
@@ -167,7 +224,15 @@ class ESIndexManager:
 
 # Document Management
 class ESDocumentManager:
+    """
+    Manages Elasticsearch documents.
+    """
     def __init__(self, es_connection: ESConnection, vector_dims: int):
+        """
+        Initialize the Elasticsearch Document Manager.
+        :param es_connection: Elasticsearch connection instance.
+        :param vector_dims: Dimensions of the vector embeddings.
+        """
         self.es = es_connection.client
         self.vector_dims = vector_dims
         self.logger = logger
@@ -183,6 +248,14 @@ class ESDocumentManager:
                         answer_vector: List[float]) -> Dict[str, Any]:
         """
         Insert document into Elasticsearch according to the provided mapping schema.
+        :param index_name: Name of the index.
+        :param question: Question text.
+        :param question_keywords: Keywords extracted from the question.
+        :param question_vector: Vector embedding of the question.
+        :param answer: Answer text.
+        :param answer_keywords: Keywords extracted from the answer.
+        :param answer_vector: Vector embedding of the answer.
+        :return: Result of the document insertion operation.
         """
         
         # Check if the lengths of the vectors match the expected dimensions
@@ -213,10 +286,18 @@ class ESDocumentManager:
 
 # Search
 class ESSearch:
+    """
+    Performs search operations in Elasticsearch.
+    """
     VALID_SEARCH_SCOPES = {'Questions', 'Answers', 'Q&A'}
     VALID_SEARCH_TYPES = {'semantic', 'full_text', 'hybrid'}
 
     def __init__(self, es_connection: ESConnection, vector_dims: int):
+        """
+        Initialize the Elasticsearch Search instance.
+        :param es_connection: Elasticsearch connection instance.
+        :param vector_dims: Dimensions of the vector embeddings.
+        """
         self.es = es_connection.client
         self.vector_dims = vector_dims
         self.logger = logger
@@ -233,6 +314,15 @@ class ESSearch:
                       search_type: str = 'hybrid') -> Dict[str, Any]:
         """
         Execute hybrid search on Elasticsearch.
+        :param index_name: Name of the index.
+        :param input_question: Input question text.
+        :param input_question_keywords: Keywords extracted from the input question.
+        :param input_question_vector: Vector embedding of the input question.
+        :param k: Number of results to return.
+        :param num_candidates: Number of candidates to consider.
+        :param search_scope: Scope of the search. Options are 'Questions', 'Answers', 'Q&A'.
+        :param search_type: Type of search. Options are 'semantic', 'full_text', 'hybrid'.
+        :return: Result of the hybrid search operation.
         """
         self._validate_search_parameters(search_scope, search_type)
 
@@ -249,12 +339,28 @@ class ESSearch:
         return self._execute_search(index_name, search_body)
 
     def _validate_search_parameters(self, search_scope: str, search_type: str):
+        """
+        Validate the search parameters.
+        :param search_scope: Scope of the search.
+        :param search_type: Type of search.
+        """
         if search_scope not in self.VALID_SEARCH_SCOPES:
             raise ValueError(f"Invalid search_scope. Acceptable values are {', '.join(self.VALID_SEARCH_SCOPES)}")
         if search_type not in self.VALID_SEARCH_TYPES:
             raise ValueError(f"Invalid search_type. Acceptable values are {', '.join(self.VALID_SEARCH_TYPES)}")
 
     def _construct_search_body(self, input_question, input_question_keywords, input_question_vector, search_scope, search_type, k, num_candidates):
+        """
+        Construct the search body for the Elasticsearch query.
+        :param input_question: Input question text.
+        :param input_question_keywords: Keywords extracted from the input question.
+        :param input_question_vector: Vector embedding of the input question.
+        :param search_scope: Scope of the search.
+        :param search_type: Type of search.
+        :param k: Number of results to return.
+        :param num_candidates: Number of candidates to consider.
+        :return: Search body for the Elasticsearch query.
+        """
         search_body = {"size": k}
         should_clauses = []
 
@@ -281,6 +387,12 @@ class ESSearch:
         return search_body
 
     def _text_query(self, input_question, search_scope):
+        """
+        Construct the text query for the Elasticsearch query.
+        :param input_question: Input question text.
+        :param search_scope: Scope of the search.
+        :return: Text query for the Elasticsearch query.
+        """
         should_clauses = []
         if search_scope in ['Questions', 'Q&A']:
             should_clauses.append({"match": {"Question": input_question}})
@@ -289,6 +401,12 @@ class ESSearch:
         return {"bool": {"should": should_clauses}}
 
     def _keyword_query(self, input_question_keywords, search_scope):
+        """
+        Construct the keyword query for the Elasticsearch query.
+        :param input_question_keywords: Keywords extracted from the input question.
+        :param search_scope: Scope of the search.
+        :return: Keyword query for the Elasticsearch query.
+        """
         should_clauses = []
         if search_scope in ['Questions', 'Q&A']:
             should_clauses.append({"terms": {"Question_Keywords": input_question_keywords}})
@@ -312,11 +430,6 @@ class ESSearch:
             self.logger.error(f"Error executing hybrid search: {e}")
             raise
 
-from typing import List, Dict, Union
-from langchain.embeddings import VertexAIEmbeddings
-from langchain.llms import VertexAI
-from langchain import PromptTemplate, LLMChain
-from es_cache import ESCacheClient
 
 class VertexLLMCacheConfig:
     def __init__(self, host: str, port: int, username: str, password: str, index_name: str, cert_path: str,
@@ -399,3 +512,4 @@ class VertexLLMCache:
     
     def l3_search(self, input_qn:str, search_type:str = "hybrid") -> Union[Dict, List]:
         return self._search_from_cache(input_qn=input_qn, search_scope="Q&A", search_type=search_type)
+
