@@ -5,7 +5,7 @@ The `VertexLLMCache` class is a hybrid cache that uses both semantic and full-te
 ### Installation
 To install the required packages, run the following command:
 ```
-pip install langchain elasticsearch
+pip install langchain elasticsearch google-cloud-aiplatform
 ```
 
 ### How to use 
@@ -54,12 +54,12 @@ import pprint
 from vertex_llm_cache import VertexLLMCache, VertexLLMCacheConfig
 
 cache_config = VertexLLMCacheConfig(
-    host="10.128.15.232",
-    port=9200,
-    username='elastic',
-    password='OMAridSl6MRMWAGDn*6z',
-    index_name='vamramak_llm_cache',
-    cert_path='./instance_ss.crt'
+    host="your-host-ip",
+    port=your-port,
+    username='your-username',
+    password='your-password',
+    index_name='your-index-name',
+    cert_path='your-cert-path'
 )
 cache = VertexLLMCache(config=cache_config)
 
