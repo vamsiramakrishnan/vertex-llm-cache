@@ -6,17 +6,16 @@ from functools import wraps
 from langchain.embeddings import VertexAIEmbeddings
 from langchain.llms import VertexAI
 from langchain import PromptTemplate, LLMChain
-from es_cache import ESCacheClient
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def ensure_connection(func: Callable) -> Callable:
     """
-    Decorator to ensure that the Elasticsearch connection is established.
-    :param func: Function to be decorated.
-    :return: Decorated function.
+    This decorator ensures that the Elasticsearch connection is established before executing the decorated function.
+
+    :param func: The function to be decorated.
+    :return: The decorated function.
     """
     @wraps(func)
     def wrapper(instance, *args, **kwargs):
@@ -26,11 +25,10 @@ def ensure_connection(func: Callable) -> Callable:
     return wrapper
 
 
-
 # Cache Client
 class ESCacheClient:
     """
-    Elasticsearch Cache Client.
+    This class represents an Elasticsearch Cache Client.
     """
     def __init__(
         self, 
@@ -42,12 +40,13 @@ class ESCacheClient:
         cert_path: str = './instance_ss.crt'):
         """
         Initialize the Elasticsearch Cache Client.
-        :param host: Hostname for the Elasticsearch server.
-        :param port: Port number for the Elasticsearch server.
-        :param vector_dims: Dimensions of the vector embeddings.
-        :param username: Username for the Elasticsearch server.
-        :param password: Password for the Elasticsearch server.
-        :param cert_path: Path to the SSL certificate for the Elasticsearch server.
+
+        :param host: The hostname for the Elasticsearch server.
+        :param port: The port number for the Elasticsearch server.
+        :param vector_dims: The dimensions of the vector embeddings.
+        :param username: The username for the Elasticsearch server.
+        :param password: The password for the Elasticsearch server.
+        :param cert_path: The path to the SSL certificate for the Elasticsearch server.
         """
         
         self.es_config = ESConnectionConfig(host=host, port=port, username=username, password= password, cert_path=cert_path)
@@ -62,27 +61,30 @@ class ESCacheClient:
     def setup_index(self, *args, **kwargs):
         """
         Set up the index in Elasticsearch.
+
         :param args: Positional arguments.
         :param kwargs: Keyword arguments.
-        :return: Result of the index setup operation.
+        :return: The result of the index setup operation.
         """
         return self.index_manager.setup_index(*args, **kwargs)
 
     def insert_document(self, *args, **kwargs):
         """
         Insert a document into Elasticsearch.
+
         :param args: Positional arguments.
         :param kwargs: Keyword arguments.
-        :return: Result of the document insertion operation.
+        :return: The result of the document insertion operation.
         """
         return self.document_manager.insert_document(*args, **kwargs)
 
     def hybrid_search(self, *args, **kwargs):
         """
         Perform a hybrid search in Elasticsearch.
+
         :param args: Positional arguments.
         :param kwargs: Keyword arguments.
-        :return: Result of the hybrid search operation.
+        :return: The result of the hybrid search operation.
         """
         return self.search.hybrid_search(*args, **kwargs)
 
@@ -90,7 +92,7 @@ class ESCacheClient:
 @dataclass(frozen=True)
 class ESConnectionConfig:
     """
-    Immutable configuration for Elasticsearch connection.
+    This class represents an immutable configuration for Elasticsearch connection.
     """
     host: str
     port: int
@@ -100,13 +102,14 @@ class ESConnectionConfig:
 
 class ESConnection:
     """
-    Manages Elasticsearch connection.
+    This class manages Elasticsearch connection.
     """
     def __init__(self, config: ESConnectionConfig, logger: logging.Logger):
         """
         Initialize the Elasticsearch connection.
-        :param config: Configuration for the Elasticsearch connection.
-        :param logger: Logger instance.
+
+        :param config: The configuration for the Elasticsearch connection.
+        :param logger: The logger instance.
         """
         self.config = config
         self.client = None
@@ -147,12 +150,13 @@ class ESConnection:
 # Index Management
 class ESIndexManager:
     """
-    Manages Elasticsearch indices.
+    This class manages Elasticsearch indices.
     """
     def __init__(self, es_connection: ESConnection):
         """
         Initialize the Elasticsearch Index Manager.
-        :param es_connection: Elasticsearch connection instance.
+
+        :param es_connection: The Elasticsearch connection instance.
         """
         self.es = es_connection.client
         self.logger = logger
@@ -163,11 +167,11 @@ class ESIndexManager:
         Set up the index with the necessary mappings for hybrid search.
         If the index already exists and force_deletion is set to True, the index will be deleted and recreated.
 
-        :param index_name: Name of the index to be set up.
+        :param index_name: The name of the index to be set up.
         :param force_deletion: If True, deletes the index if it already exists.
-        :param similarity_type: Type of similarity metric to use. Options are "cosine", "dot_product", "l2_norm", etc.
-        :param knn_type: Type of KNN search. Options are "exact" or "hnsw".
-        :param hnsw_params: Dictionary containing hnsw specific parameters like "m" and "ef_construction".
+        :param similarity_type: The type of similarity metric to use. Options are "cosine", "dot_product", "l2_norm", etc.
+        :param knn_type: The type of KNN search. Options are "exact" or "hnsw".
+        :param hnsw_params: A dictionary containing hnsw specific parameters like "m" and "ef_construction".
         """
 
         if knn_type == "hnsw" and hnsw_params is None:
@@ -225,13 +229,14 @@ class ESIndexManager:
 # Document Management
 class ESDocumentManager:
     """
-    Manages Elasticsearch documents.
+    This class manages Elasticsearch documents.
     """
     def __init__(self, es_connection: ESConnection, vector_dims: int):
         """
         Initialize the Elasticsearch Document Manager.
-        :param es_connection: Elasticsearch connection instance.
-        :param vector_dims: Dimensions of the vector embeddings.
+
+        :param es_connection: The Elasticsearch connection instance.
+        :param vector_dims: The dimensions of the vector embeddings.
         """
         self.es = es_connection.client
         self.vector_dims = vector_dims
@@ -248,14 +253,15 @@ class ESDocumentManager:
                         answer_vector: List[float]) -> Dict[str, Any]:
         """
         Insert document into Elasticsearch according to the provided mapping schema.
-        :param index_name: Name of the index.
-        :param question: Question text.
-        :param question_keywords: Keywords extracted from the question.
-        :param question_vector: Vector embedding of the question.
-        :param answer: Answer text.
-        :param answer_keywords: Keywords extracted from the answer.
-        :param answer_vector: Vector embedding of the answer.
-        :return: Result of the document insertion operation.
+
+        :param index_name: The name of the index.
+        :param question: The question text.
+        :param question_keywords: The keywords extracted from the question.
+        :param question_vector: The vector embedding of the question.
+        :param answer: The answer text.
+        :param answer_keywords: The keywords extracted from the answer.
+        :param answer_vector: The vector embedding of the answer.
+        :return: The result of the document insertion operation.
         """
         
         # Check if the lengths of the vectors match the expected dimensions
@@ -287,16 +293,20 @@ class ESDocumentManager:
 # Search
 class ESSearch:
     """
-    Performs search operations in Elasticsearch.
+    This class is responsible for performing search operations in Elasticsearch.
+    It supports three types of search: semantic, full-text, and hybrid.
     """
+
+    # Define valid search scopes and types
     VALID_SEARCH_SCOPES = {'Questions', 'Answers', 'Q&A'}
     VALID_SEARCH_TYPES = {'semantic', 'full_text', 'hybrid'}
 
     def __init__(self, es_connection: ESConnection, vector_dims: int):
         """
         Initialize the Elasticsearch Search instance.
-        :param es_connection: Elasticsearch connection instance.
-        :param vector_dims: Dimensions of the vector embeddings.
+
+        :param es_connection: An instance of the Elasticsearch connection.
+        :param vector_dims: The dimensions of the vector embeddings.
         """
         self.es = es_connection.client
         self.vector_dims = vector_dims
@@ -313,19 +323,19 @@ class ESSearch:
                       search_scope: str = 'Q&A',
                       search_type: str = 'hybrid') -> Dict[str, Any]:
         """
-        Execute hybrid search on Elasticsearch.
-        :param index_name: Name of the index.
-        :param input_question: Input question text.
-        :param input_question_keywords: Keywords extracted from the input question.
-        :param input_question_vector: Vector embedding of the input question.
-        :param k: Number of results to return.
-        :param num_candidates: Number of candidates to consider.
-        :param search_scope: Scope of the search. Options are 'Questions', 'Answers', 'Q&A'.
-        :param search_type: Type of search. Options are 'semantic', 'full_text', 'hybrid'.
-        :return: Result of the hybrid search operation.
-        """
-        self._validate_search_parameters(search_scope, search_type)
+        Execute a hybrid search on Elasticsearch.
 
+        :param index_name: The name of the index to search.
+        :param input_question: The question to search for.
+        :param input_question_keywords: The keywords extracted from the question.
+        :param input_question_vector: The vector embedding of the question.
+        :param k: The number of results to return.
+        :param num_candidates: The number of candidates to consider during the search.
+        :param search_scope: The scope of the search. Can be 'Questions', 'Answers', or 'Q&A'.
+        :param search_type: The type of search to perform. Can be 'semantic', 'full_text', or 'hybrid'.
+        :return: The result of the search operation.
+        """
+        # Construct the search body
         search_body = self._construct_search_body(
             input_question, 
             input_question_keywords, 
@@ -336,13 +346,16 @@ class ESSearch:
             num_candidates
         )
 
+        # Execute the search and return the result
         return self._execute_search(index_name, search_body)
 
     def _validate_search_parameters(self, search_scope: str, search_type: str):
         """
         Validate the search parameters.
-        :param search_scope: Scope of the search.
-        :param search_type: Type of search.
+
+        :param search_scope: The scope of the search. Must be one of the valid search scopes.
+        :param search_type: The type of search to perform. Must be one of the valid search types.
+        :raises ValueError: If the search scope or type is not valid.
         """
         if search_scope not in self.VALID_SEARCH_SCOPES:
             raise ValueError(f"Invalid search_scope. Acceptable values are {', '.join(self.VALID_SEARCH_SCOPES)}")
@@ -352,18 +365,21 @@ class ESSearch:
     def _construct_search_body(self, input_question, input_question_keywords, input_question_vector, search_scope, search_type, k, num_candidates):
         """
         Construct the search body for the Elasticsearch query.
-        :param input_question: Input question text.
-        :param input_question_keywords: Keywords extracted from the input question.
-        :param input_question_vector: Vector embedding of the input question.
-        :param search_scope: Scope of the search.
-        :param search_type: Type of search.
-        :param k: Number of results to return.
-        :param num_candidates: Number of candidates to consider.
-        :return: Search body for the Elasticsearch query.
+
+        :param input_question: The question to search for.
+        :param input_question_keywords: The keywords extracted from the question.
+        :param input_question_vector: The vector embedding of the question.
+        :param search_scope: The scope of the search.
+        :param search_type: The type of search to perform.
+        :param k: The number of results to return.
+        :param num_candidates: The number of candidates to consider during the search.
+        :return: The search body for the Elasticsearch query.
         """
+        # Initialize the search body
         search_body = {"size": k}
         should_clauses = []
 
+        # Construct the full-text or hybrid search query
         if search_type in ['full_text', 'hybrid']:
             if input_question:
                 text_query = self._text_query(input_question, search_scope)
@@ -375,6 +391,7 @@ class ESSearch:
                 keyword_query["bool"]["boost"] = 0.6 if search_type == 'full_text' else 0.5
                 should_clauses.append(keyword_query)
 
+        # Construct the semantic or hybrid search query
         if search_type in ['semantic', 'hybrid']:
             if input_question_vector:
                 knn_query = self._knn_query(input_question_vector, search_scope, k, num_candidates)
@@ -382,6 +399,7 @@ class ESSearch:
                 # Add the knn query separately
                 search_body["knn"] = [knn_query]
 
+        # Add the constructed queries to the search body
         search_body["query"] = {"bool": {"should": should_clauses}}
 
         return search_body
@@ -389,9 +407,10 @@ class ESSearch:
     def _text_query(self, input_question, search_scope):
         """
         Construct the text query for the Elasticsearch query.
-        :param input_question: Input question text.
-        :param search_scope: Scope of the search.
-        :return: Text query for the Elasticsearch query.
+
+        :param input_question: The question to search for.
+        :param search_scope: The scope of the search.
+        :return: The text query for the Elasticsearch query.
         """
         should_clauses = []
         if search_scope in ['Questions', 'Q&A']:
@@ -403,9 +422,10 @@ class ESSearch:
     def _keyword_query(self, input_question_keywords, search_scope):
         """
         Construct the keyword query for the Elasticsearch query.
-        :param input_question_keywords: Keywords extracted from the input question.
-        :param search_scope: Scope of the search.
-        :return: Keyword query for the Elasticsearch query.
+
+        :param input_question_keywords: The keywords extracted from the question.
+        :param search_scope: The scope of the search.
+        :return: The keyword query for the Elasticsearch query.
         """
         should_clauses = []
         if search_scope in ['Questions', 'Q&A']:
@@ -415,6 +435,15 @@ class ESSearch:
         return {"bool": {"should": should_clauses}}
 
     def _knn_query(self, input_question_vector, search_scope, k, num_candidates):
+        """
+        Construct the k-nearest neighbors (knn) query for the Elasticsearch query.
+
+        :param input_question_vector: The vector embedding of the question.
+        :param search_scope: The scope of the search.
+        :param k: The number of results to return.
+        :param num_candidates: The number of candidates to consider during the search.
+        :return: The knn query for the Elasticsearch query.
+        """
         field = "Question_Vector" if search_scope in ['Questions', 'Q&A'] else "Answer_Vector"
         # Default behavior for non-exact knn_type
         return {
@@ -423,7 +452,16 @@ class ESSearch:
             "k": k,
             "num_candidates": num_candidates
         }
+
     def _execute_search(self, index_name, search_body):
+        """
+        Execute the search operation in Elasticsearch.
+
+        :param index_name: The name of the index to search.
+        :param search_body: The search body for the Elasticsearch query.
+        :return: The result of the search operation.
+        :raises Exception: If an error occurs during the search operation.
+        """
         try:
             return self.es.search(index=index_name, body=search_body)
         except Exception as e:
@@ -432,9 +470,26 @@ class ESSearch:
 
 
 class VertexLLMCacheConfig:
+    """
+    This class is responsible for storing the configuration parameters for the VertexLLMCache.
+    """
     def __init__(self, host: str, port: int, username: str, password: str, index_name: str, cert_path: str,
                  model_name: str = 'text-bison', vector_dims: int = 768, similarity_type: str = "dot_product",
                  knn_type: str = "exact"):
+        """
+        Initialize the VertexLLMCacheConfig instance.
+
+        :param host: The host IP address for the Elasticsearch server.
+        :param port: The port number for the Elasticsearch server.
+        :param username: The username for the Elasticsearch server.
+        :param password: The password for the Elasticsearch server.
+        :param index_name: The name of the index in Elasticsearch.
+        :param cert_path: The path to the certificate for the Elasticsearch server.
+        :param model_name: The name of the model to use for embeddings. Default is 'text-bison'.
+        :param vector_dims: The dimensions of the vector embeddings. Default is 768.
+        :param similarity_type: The type of similarity to use for the embeddings. Default is 'dot_product'.
+        :param knn_type: The type of k-nearest neighbors algorithm to use. Default is 'exact'.
+        """
         self.host = host
         self.port = port
         self.username = username
@@ -448,6 +503,12 @@ class VertexLLMCacheConfig:
 
 
 class VertexLLMCache:
+    """
+    This class is responsible for managing a cache of questions and answers using VertexAI and Elasticsearch.
+    It supports inserting data into the cache and searching for data in the cache.
+    """
+
+    # Define the template for extracting entities from text
     TEMPLATE = """
     Extract Entities from Text Separated by Commas
     Text: {text}
@@ -455,6 +516,13 @@ class VertexLLMCache:
     """
 
     def __init__(self, config: VertexLLMCacheConfig, llm: VertexAI = None, embeddings: VertexAIEmbeddings = None):
+        """
+        Initialize the VertexLLMCache instance.
+
+        :param config: An instance of the VertexLLMCacheConfig.
+        :param llm: An instance of the VertexAI. If not provided, a new instance will be created.
+        :param embeddings: An instance of the VertexAIEmbeddings. If not provided, a new instance will be created.
+        """
         self.llm = llm or VertexAI(model_name=config.model_name)
         self.embeddings = embeddings or VertexAIEmbeddings()
         self.prompt = PromptTemplate(template=self.TEMPLATE, input_variables=["text"])
@@ -472,17 +540,29 @@ class VertexLLMCache:
         self.index_name = config.index_name
 
     def _extract_keywords(self, text: str) -> List[str]:
-        """Extract keywords from the given text."""
+        """
+        Extract keywords from the given text.
+
+        :param text: The text to extract keywords from.
+        :return: A list of keywords extracted from the text.
+        """
         keywords_str = self.llm_chain.run({"text": text})
         return keywords_str.split(",")
 
     def insert_into_cache(self, question: str, answer: str) -> None:
-        """Insert question and answer into the cache."""
+        """
+        Insert a question and its corresponding answer into the cache.
+
+        :param question: The question to insert into the cache.
+        :param answer: The answer to the question.
+        """
+        # Extract keywords and embeddings from the question and answer
         qn_keywords = self._extract_keywords(question)
         ans_keywords = self._extract_keywords(answer)
         question_embedding = self.embeddings.embed_query(question)
         answer_embedding = self.embeddings.embed_query(answer)
 
+        # Insert the question and answer into the cache
         self.vertex_cache_client.insert_document(
             index_name=self.index_name,
             question=question,
@@ -494,8 +574,17 @@ class VertexLLMCache:
         )
 
     def _search_from_cache(self, input_qn: str, search_scope: str, search_type: str) -> Union[Dict, List]:
-        """Search for a question in the cache."""
+        """
+        Search for a question in the cache.
+
+        :param input_qn: The question to search for.
+        :param search_scope: The scope of the search.
+        :param search_type: The type of search to perform.
+        :return: The result of the search operation.
+        """
+        # Extract keywords and embeddings from the input question
         input_qn_keywords = self._extract_keywords(input_qn)
+        # Perform the search and return the result
         return self.vertex_cache_client.hybrid_search(
             index_name=self.index_name,
             input_question=input_qn,
@@ -504,12 +593,31 @@ class VertexLLMCache:
             search_scope=search_scope,
             search_type=search_type
         )
+
     def l1_search(self, input_qn:str, search_type:str = "hybrid") -> Union[Dict, List]:
+        """
+        Perform a level 1 search in the cache.
+        This search only considers the questions in the cache.
+
+        :param input_qn: The question to search for.
+        :param search_type: The type of search to perform. Default is 'hybrid'.
+        :return: The result of the search operation.
+        """
         return self._search_from_cache(input_qn=input_qn, search_scope="Questions", search_type=search_type)
     
     def l2_search(self, input_qn:str, search_type:str = "hybrid") -> Union[Dict, List]:
+        """
+        Perform a level 2 search in the cache.
+        This search only considers the answers in the cache.
+
+        :param input_qn: The question to search for.
+        :param search_type: The type of search to perform. Default is 'hybrid'.
+        :return: The result of the search operation.
+        """
         return self._search_from_cache(input_qn=input_qn, search_scope="Answers", search_type=search_type)
     
     def l3_search(self, input_qn:str, search_type:str = "hybrid") -> Union[Dict, List]:
         return self._search_from_cache(input_qn=input_qn, search_scope="Q&A", search_type=search_type)
+
+
 
